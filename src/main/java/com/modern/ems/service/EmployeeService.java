@@ -30,10 +30,18 @@ public class EmployeeService {
     return employeeDto;
   }
 
+  public List<EmployeeDto> findByDepartment(String department) {
+    List<Employee> employees = employeeRepository.findByDepartment(department);
+    return reduceToDto(employees);
+  }
+
   private Employee buildEmployee(EmployeeDto employeeDto) {
     Employee employee = new Employee();
     employee.setName(employeeDto.name());
     employee.setEmail(employeeDto.email());
+    employee.setDepartment(employeeDto.department());
+    employee.setSalary(employeeDto.salary());
+    employee.setHireDate(employeeDto.hireDate());
     return employee;
   }
 
@@ -47,7 +55,7 @@ public class EmployeeService {
   }
 
   private EmployeeDto mapToDto(Employee employee) {
-    EmployeeDto dto = new EmployeeDto(employee.getId(), employee.getName(), employee.getEmail());
+    EmployeeDto dto = new EmployeeDto(employee.getId(), employee.getName(), employee.getEmail(),  employee.getDepartment(), employee.getSalary(), employee.getHireDate());
     return dto;
   }
 

@@ -70,4 +70,16 @@ public class Employee {
   public void setHireDate(LocalDate hireDate) {
     this.hireDate = hireDate;
   }
+
+  @Override
+  public String toString() {
+    return "Employee{" +
+        "id=" + id +
+        ", name='" + name + '\'' +
+        ", email='" + email + '\'' +
+        ", department='" + department + '\'' +
+        ", salary=" + salary +
+        ", hireDate=" + hireDate +
+        '}';
+  }
 }

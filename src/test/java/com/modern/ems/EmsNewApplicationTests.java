@@ -2,6 +2,7 @@ package com.modern.ems;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.client.RestTestClient;
 
 import com.modern.ems.controller.EmployeeController;
@@ -29,8 +31,8 @@ class EmsNewApplicationTests {
 
   @Test
   void saveAndRead() {
-    EmployeeDto employeeDto = new EmployeeDto(null, "testName", "test@email.com");
-    EmployeeDto employeeDto2 = new EmployeeDto(null, "testName2", "test2@email.com");
+    EmployeeDto employeeDto = new EmployeeDto(null, "testName", "test@email.com", "dep1", 12.34, LocalDate.now());
+    EmployeeDto employeeDto2 = new EmployeeDto(null, "testName2","test2@email.com", "dep2",56.78,  LocalDate.now());
 
     restTestClient.post().uri("/api/employees/create")
         .body(employeeDto)
@@ -44,29 +46,63 @@ class EmsNewApplicationTests {
         .expectStatus().isCreated()
         .expectBody(Employee.class);
 
-    List<Employee> employeeList = restTestClient.get()
+    List<EmployeeDto> employeeList = restTestClient.get()
         .uri("/api/employees")
         .exchange()
         .expectStatus()
         .isOk()
-        .expectBody(new ParameterizedTypeReference<List<Employee>>() {})
+        .expectBody(new ParameterizedTypeReference<List<EmployeeDto>>() {})
         .returnResult()
         .getResponseBody();
 
     assertEquals(2, employeeList.size());
-    assertEquals(employeeDto.name(), employeeList.get(0).getName());
-    assertEquals(employeeDto.email(), employeeList.get(0).getEmail());
-    assertEquals(employeeDto2.name(), employeeList.get(1).getName());
-    assertEquals(employeeDto2.email(), employeeList.get(1).getEmail());
+    assertEmployee(employeeDto, employeeList.get(0));
+    assertEmployee(employeeDto2, employeeList.get(1));
   }
 
   @Test
   void saveInvalid() {
-    EmployeeDto employeeDto = new EmployeeDto(null, "testName", "invalid");
+    EmployeeDto employeeDto = new EmployeeDto(null, "testName", "invalid", "dep1", 12.34, LocalDate.now());
     restTestClient.post().uri("/api/employees/create")
         .body(employeeDto)
         .exchange()
         .expectStatus().is5xxServerError();
+  }
+
+  @Test
+  void shouldFindByDepartment() {
+    // given
+    EmployeeDto expected = new EmployeeDto(null, "testName", "test@email.com", "dep11", 12.34, LocalDate.now());
+
+    restTestClient.post().uri("/api/employees/create")
+        .body(expected)
+        .exchange()
+        .expectStatus().isCreated()
+        .expectBody(Employee.class);
+
+    // when
+    List<EmployeeDto> employeeList = restTestClient.get()
+        .uri(uriBuilder -> uriBuilder.path("/api/employees/department")
+            .queryParam("department", expected.department())
+            .build())
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody(new ParameterizedTypeReference<List<EmployeeDto>>() {})
+        .returnResult()
+        .getResponseBody();
+
+    // then
+    assertEquals(1, employeeList.size());
+    assertEmployee(expected, employeeList.get(0));
+  }
+
+  private void assertEmployee(EmployeeDto expected, EmployeeDto actual) {
+    assertEquals(expected.name(), actual.name());
+    assertEquals(expected.email(), actual.email());
+    assertEquals(expected.department(), actual.department());
+    assertEquals(expected.salary(), actual.salary());
+    assertEquals(expected.hireDate(), actual.hireDate());
   }
 
 }
