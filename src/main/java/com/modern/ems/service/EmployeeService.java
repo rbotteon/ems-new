@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.modern.ems.dto.EmployeeDto;
 import com.modern.ems.entity.Employee;
@@ -15,10 +16,25 @@ public class EmployeeService {
   @Autowired
   EmployeeRepository employeeRepository;
 
+  @Transactional
+  public Employee saveEmployee(EmployeeDto employeeDto) {
+
+    Employee employee = buildEmployee(employeeDto);
+    employee = employeeRepository.save(employee);
+    return employee;
+  }
+
   public List<EmployeeDto> getEmployees() {
     List<Employee> employees = employeeRepository.findAll();
     List<EmployeeDto> employeeDto = reduceToDto(employees);
-    return null;
+    return employeeDto;
+  }
+
+  private Employee buildEmployee(EmployeeDto employeeDto) {
+    Employee employee = new Employee();
+    employee.setName(employeeDto.name());
+    employee.setEmail(employeeDto.email());
+    return employee;
   }
 
   private List<EmployeeDto> reduceToDto(List<Employee> employees) {
@@ -34,4 +50,5 @@ public class EmployeeService {
     EmployeeDto dto = new EmployeeDto(employee.getId(), employee.getName(), employee.getEmail());
     return dto;
   }
+
 }
