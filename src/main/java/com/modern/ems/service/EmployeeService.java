@@ -11,6 +11,9 @@ import com.modern.ems.dto.EmployeeDto;
 import com.modern.ems.entity.Employee;
 import com.modern.ems.persistence.EmployeeRepository;
 
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Valid;
+
 @Component
 public class EmployeeService {
   @Autowired
@@ -54,9 +57,48 @@ public class EmployeeService {
     return dtoList;
   }
 
+  public EmployeeDto getById(Long employeeId) {
+    Employee employee = employeeRepository.findById(employeeId).orElseThrow();
+    return mapToDto(employee);
+  }
+
+  public Employee updateEmployee(@Valid EmployeeDto employeeDto) {
+    Employee employee = mapToEntity(employeeDto);
+    return employeeRepository.save(employee);
+  }
+
+  public void deleteEmployee(Long employeeId) {
+    if (employeeId == null) {
+      String warnMsg = "delete.request.id: must not be null";
+      throw new ConstraintViolationException(warnMsg, null);
+    }
+    employeeRepository.deleteById(employeeId);
+  }
+
   private EmployeeDto mapToDto(Employee employee) {
-    EmployeeDto dto = new EmployeeDto(employee.getId(), employee.getName(), employee.getEmail(),  employee.getDepartment(), employee.getSalary(), employee.getHireDate());
+    EmployeeDto dto = new EmployeeDto(
+        employee.getId(),
+        employee.getName(),
+        employee.getEmail(),
+        employee.getDepartment(),
+        employee.getSalary(),
+        employee.getHireDate());
     return dto;
   }
 
+  private Employee mapToEntity(EmployeeDto employeeDto) {
+    Employee employee = new Employee();
+
+    if (employeeDto.id() != null) {
+      employee = employeeRepository.findById(employeeDto.id()).orElseThrow();
+    }
+
+    employee.setName(employeeDto.name());
+    employee.setEmail(employeeDto.email());
+    employee.setDepartment(employeeDto.department());
+    employee.setSalary(employeeDto.salary());
+    employee.setHireDate(employeeDto.hireDate());
+
+    return employee;
+  }
 }

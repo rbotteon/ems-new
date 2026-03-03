@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.client.RestTestClient;
 
@@ -58,6 +57,9 @@ class EmsNewApplicationTests {
     assertEquals(2, employeeList.size());
     assertEmployee(employeeDto, employeeList.get(0));
     assertEmployee(employeeDto2, employeeList.get(1));
+
+
+
   }
 
   @Test
@@ -97,7 +99,69 @@ class EmsNewApplicationTests {
     assertEmployee(expected, employeeList.get(0));
   }
 
+  @Test
+  void shouldCRUD() {
+    // create
+    EmployeeDto expected = new EmployeeDto(null, "crudName", "crud@email.com", "depCrud", 999999.99, LocalDate.now());
+    EmployeeDto created = restTestClient.post().uri("/api/employees/create")
+        .body(expected)
+        .exchange()
+        .expectStatus().isCreated()
+        .expectBody(EmployeeDto.class)
+        .returnResult()
+        .getResponseBody();
+
+    assertEmployee(expected, created);
+
+    // read
+    EmployeeDto read = restTestClient.get()
+        .uri("/api/employees/" + created.id())
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody(EmployeeDto.class)
+        .returnResult()
+        .getResponseBody();
+
+    assertEmployee(created, read, true);
+
+    // update
+    String newDepartment = "newDepartment";
+    EmployeeDto toUpdate = new EmployeeDto(read.id(), read.name(), read.email(), newDepartment, read.salary(), read.hireDate());
+    EmployeeDto updated = restTestClient.put()
+        .uri("/api/employees/{employeeId}", 1)
+        .body(toUpdate)
+        .exchange()
+        .expectStatus().isCreated()
+        .expectBody(EmployeeDto.class)
+        .returnResult()
+        .getResponseBody();
+
+    assertEmployee(toUpdate, updated, true);
+
+    // delete
+    restTestClient.delete()
+        .uri("/api/employees/" + updated.id())
+        .exchange()
+        .expectStatus().isOk();
+
+    restTestClient.get()
+        .uri("/api/employees/" + updated.id())
+        .exchange()
+        .expectStatus().is5xxServerError();
+
+  }
+
+  private void assertEmployee(EmployeeDto expected, EmployeeDto actual, Boolean checkId) {
+
+    if (checkId) {
+      assertEquals(expected.id(), actual.id());
+    }
+    assertEmployee(expected, actual);
+  }
+
   private void assertEmployee(EmployeeDto expected, EmployeeDto actual) {
+    System.out.println("Expected: " + expected);
+    System.out.println("Actual:   " + actual);
     assertEquals(expected.name(), actual.name());
     assertEquals(expected.email(), actual.email());
     assertEquals(expected.department(), actual.department());
